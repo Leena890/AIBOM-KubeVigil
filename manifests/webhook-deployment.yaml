@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubevigil-webhook
+  namespace: default
+  labels:
+    app: kubevigil-webhook
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kubevigil-webhook
+  template:
+    metadata:
+      labels:
+        app: kubevigil-webhook
+    spec:
+      containers:
+        - name: webhook
+          image: kubevigil:v2
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8443
+              name: https
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8443
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8443
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubevigil-webhook
+  namespace: default
+  labels:
+    app: kubevigil-webhook
+spec:
+  ports:
+    - port: 443
+      targetPort: 8443
+      protocol: TCP
+      name: https
+  selector:
+    app: kubevigil-webhook

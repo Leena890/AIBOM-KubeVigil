@@ -1,0 +1,30 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: kubevigil-webhook
+webhooks:
+  - name: kubevigil.default.svc
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system", "kube-public", "kube-node-lease"]
+    objectSelector: {}
+    admissionReviewVersions: ["v1"]
+    sideEffects: None
+    timeoutSeconds: 5
+    failurePolicy: Ignore
+    clientConfig:
+      service:
+        name: kubevigil-webhook
+        namespace: default
+        path: /validate
+        port: 443
+      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUN6ekNDQWJlZ0F3SUJBZ0lVU2RvNHl0YjM0TXB2ZlZ6dkhDTUVIT3VnY3Vnd0RRWUpLb1pJaHZjTkFRRUwKQlFBd0Z6RVZNQk1HQTFVRUF3d01hM1ZpWlhacFoybHNMV05oTUI0WERUSTJNVEF6TURBNE5USTFNMW9YRFRJMwpNVEF6TVRBNE5USTFNMW93RnpFVk1CTUdBMVVFQXd3TWEzVmlaWFpwWjJsc0xXTmhNSUlCSWpBTkJna3Foa2lHCjl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUFyV2xhU3FQbU5KOVJ2bjY0b1B2UmQ5TmZFaUFTQkZ3eTRVMzYKUW1JODROQm5wZk1ONVd0eVExclpLTWRybzdmazFUTEZyOHE1aVlZUExzcGpPdnpxWnJnRU82NWt5OWhCYzRWRgo4TFVDWVBZL3J1amVNdVhGTEwxWk9kT2k0dHpDYldQTDZpTm53U0Z6M1hzaEwzeGRtS01ZOEUxeDhiRnU0NjdQCmFpblNCVCs1M0FxalVvbzF1ZjY4c3h1NU1zbmd5cnJKakg3bThiYzNnUDhMTkVPVUVGTEhUdTNWL1hFRGpsN1oKRlF1LzVscXluYmdCZGVtZ3VJbmFMT2h0NVd4bzFiWmpGckRwUml0ZkFwd0UycW1SWE9DQjFLOTVSZE0raStrWQorSkhRZlM0d3czNTZKTFRJSEwyekEveWo1cm9la2h0VjVuWnNGNkI4YlM3dUpzZDBKUUlEQVFBQm94TXdFVEFQCkJnTlZIUk1CQWY4RUJUQURBUUgvTUEwR0NTcUdTSWIzRFFFQkN3VUFBNElCQVFBNzN4TGhZSXNYTHI3Y2RxbGgKL1Ivc2tQWDRvVmE1Si9FY25SNWZZWmRhYi9IaEtaSUpMUFUxUldpQzJUWE9QaFRqVHFYOEo0dFRPUkpjN3JsQgpSSnNqTTJrblBRb0hpcHpoblBTVHM3cHh4Q3dZYXdmNFZmMTVKTGphd0FDL1dSMDlPTm1qMjA4UVBuVUFmUHhPCnhXV0s2dU9kU3ZLdkJGdHY2cnhKd1BxTEprd0VheGNBWEFUVHJHOXhFR2I2Sm9uMklBMHh6TlpBWmczeDlNcnEKMjYwb29kWXZHSTEvdzhRVXRsTEFoVytJRWE4ODFsQkZxT3dVMnFTdHhVTnNaUENSdFJrUjl3NFR1RjVXNzNteQpmM29YZm9BVitQYU1INkhhd1VTQXNOeHg3TVliVi9uV3pleEF6RVVpV3N6azhXTm05VFVEWVNGQWxWWUNrSzdaCmtyNlMKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+
+    rules:
+      - operations: ["CREATE"]
+        apiGroups: [""]
+        apiVersions: ["v1"]
+        resources: ["pods"]
+        scope: "Namespaced"
