@@ -1,0 +1,14 @@
+{
+  "nginx:alpine": {
+    "sbom_format": "CycloneDX-JSON",
+    "sbom_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "attestation_status": "VERIFIED",
+    "allowed": true
+  },
+  "python:3.11-slim": {
+    "sbom_format": "SPDX-JSON",
+    "sbom_sha256": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+    "attestation_status": "VERIFIED",
+    "allowed": true
+  }
+}

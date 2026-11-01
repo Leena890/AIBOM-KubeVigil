@@ -1,84 +1,89 @@
+import json
 import logging
-from fastapi import FastAPI, HTTPException
-from webhook.schemas import (
-    AdmissionRequest,
-    AdmissionResponse,
-    AdmissionReview,
-    AdmissionStatus,
-)
+from pathlib import Path
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 
-# Configure logging to monitor intercepted admission reviews
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-logger = logging.getLogger("kubevigil")
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("kube-vigil")
 
-app = FastAPI(title="KubeVigil Admission Webhook", version="1.0.0")
+app = FastAPI(title="KubeVigil Admission Controller")
 
+LEDGER_PATH = Path(__file__).resolve().parent.parent / "evidence" / "sbom_ledger.json"
 
-@app.get("/healthz")
-async def health_check():
-    """Liveness and readiness probe endpoint for Kubernetes."""
-    return {"status": "healthy"}
+def load_sbom_ledger() -> dict:
+    if not LEDGER_PATH.exists():
+        logger.warning(f"Ledger file not found at {LEDGER_PATH}. Defaulting to empty ledger.")
+        return {}
+    try:
+        with open(LEDGER_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as exc:
+        logger.error(f"Error reading SBOM ledger: {exc}")
+        return {}
 
+def verify_image_sbom(image_name: str, ledger: dict) -> tuple[bool, str]:
+    if image_name not in ledger:
+        return (
+            False,
+            f"Image '{image_name}' rejected: No verified SBOM or attestation found in ledger."
+        )
 
-@app.post("/validate", response_model=AdmissionReview)
-async def validate_workload(review: AdmissionReview):
-    """
-    Validates incoming Pod resources against KubeVigil policies.
-    """
-    if not review.request:
-        raise HTTPException(status_code=400, detail="Missing admission request body")
+    entry = ledger[image_name]
+    if not entry.get("allowed", False):
+        return (
+            False,
+            f"Image '{image_name}' rejected: Marked as disallowed by supply-chain policy."
+        )
 
-    req: AdmissionRequest = review.request
-    req_uid = req.uid
-    logger.info(f"Received AdmissionReview for UID: {req_uid}, Operation: {req.operation}")
+    if entry.get("attestation_status") != "VERIFIED":
+        return (
+            False,
+            f"Image '{image_name}' rejected: Attestation status is '{entry.get('attestation_status')}' (expected 'VERIFIED')."
+        )
 
-    # Extract containers from Pod specification
-    containers = []
-    if req.object and req.object.spec:
-        containers = req.object.spec.containers
-
-    # Evaluate each container image
-    for container in containers:
-        image_name = container.image
-        logger.info(f"Evaluating container '{container.name}' with image: '{image_name}'")
-
-        # Baseline guardrail: Reject untrusted/unsigned placeholder test images
-        if "untrusted" in image_name or "malicious" in image_name:
-            logger.warning(f"Blocking workload UID {req_uid}: Untrusted image detected ({image_name})")
-            return AdmissionReview(
-                apiVersion=review.apiVersion,
-                kind=review.kind,
-                response=AdmissionResponse(
-                    uid=req_uid,
-                    allowed=False,
-                    status=AdmissionStatus(
-                        code=403,
-                        message=f"KubeVigil Policy Violation: Image '{image_name}' failed security and provenance validation.",
-                    ),
-                ),
-            )
-
-    # Workload passed evaluation
-    logger.info(f"Workload UID {req_uid} approved.")
-    return AdmissionReview(
-        apiVersion=review.apiVersion,
-        kind=review.kind,
-        response=AdmissionResponse(
-            uid=req_uid,
-            allowed=True,
-        ),
+    sbom_format = entry.get("sbom_format", "Unknown")
+    return (
+        True,
+        f"Image '{image_name}' approved: Valid {sbom_format} SBOM recorded."
     )
 
+@app.post("/validate")
+async def validate_pod(request: Request):
+    review = await request.json()
+    req_body = review.get("request", {})
+    uid = req_body.get("uid", "")
+    pod = req_body.get("object", {})
 
-if __name__ == "__main__":
-    import uvicorn
+    containers = pod.get("spec", {}).get("containers", [])
+    ledger = load_sbom_ledger()
 
-    # Launch server locally using generated TLS certificates on port 8443
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=8443,
-        ssl_keyfile="certs/server.key",
-        ssl_certfile="certs/server.crt",
-        reload=True,
+    for container in containers:
+        image = container.get("image", "")
+        allowed, reason = verify_image_sbom(image, ledger)
+        if not allowed:
+            logger.info(f"Admission DENIED for UID={uid}: {reason}")
+            return JSONResponse(
+                content={
+                    "apiVersion": "admission.k8s.io/v1",
+                    "kind": "AdmissionReview",
+                    "response": {
+                        "uid": uid,
+                        "allowed": False,
+                        "status": {"code": 403, "message": reason},
+                    },
+                }
+            )
+
+    logger.info(f"Admission ALLOWED for UID={uid}: All container images verified via SBOM ledger.")
+    return JSONResponse(
+        content={
+            "apiVersion": "admission.k8s.io/v1",
+            "kind": "AdmissionReview",
+            "response": {
+                "uid": uid,
+                "allowed": True,
+                "status": {"code": 200, "message": "All images verified against SBOM ledger."},
+            },
+        }
     )
