@@ -8,6 +8,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("kube-vigil")
 
 app = FastAPI(title="KubeVigil Admission Controller")
+@app.get("/healthz")
+async def healthz():
+    return {"status": "ok"}
 
 LEDGER_PATH = Path(__file__).resolve().parent.parent / "evidence" / "sbom_ledger.json"
 

@@ -1,4 +1,10 @@
 {
+  "registry.internal/verified-app:v1.0": {
+    "sbom_format": "CycloneDX-JSON",
+    "sbom_sha256": "4a5e1289b4f9810a7261d7a86f912e5c8e3e4a908123fa908123fa908123fa90",
+    "attestation_status": "VERIFIED",
+    "allowed": true
+  },
   "nginx:alpine": {
     "sbom_format": "CycloneDX-JSON",
     "sbom_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
