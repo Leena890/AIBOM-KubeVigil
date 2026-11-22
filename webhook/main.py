@@ -6,12 +6,16 @@ from typing import Tuple
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from webhook.schemas import AdmissionResponse, AdmissionRequest, AdmissionReview
 
 try:
     from webhook.schemas import AdmissionResponse, AdmissionRequest, AdmissionReview
 except ModuleNotFoundError:
     from schemas import AdmissionResponse, AdmissionRequest, AdmissionReview
+
+try:
+    from webhook.sbom_verifier import verify_sbom_compliance
+except ModuleNotFoundError:
+    from sbom_verifier import verify_sbom_compliance
 
 logging.basicConfig(
     level=logging.INFO,
@@ -19,7 +23,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("kube-vigil")
 
-app = FastAPI(title="KubeVigil Admission Webhook", version="0.5.0")
+app = FastAPI(title="KubeVigil Admission Webhook", version="0.6.0")
 
 # Trusted Sigstore signer policy (configurable via environment variables)
 TRUSTED_IDENTITY = os.getenv("COSIGN_IDENTITY", "leenaks1998@gmail.com")
@@ -110,6 +114,8 @@ async def validate_admission(request: Request):
 
     for c in containers:
         image_str = c.image
+
+        # Gate 1 & 2: Immutable @sha256 digest + Cosign signature verification
         allowed, reason = verify_image_signature(image_str)
         if not allowed:
             logger.info(f"Admission DENIED for UID={uid}: {reason}")
@@ -123,13 +129,27 @@ async def validate_admission(request: Request):
                 )
             )
 
-    logger.info(f"Admission ALLOWED for UID={uid}: All container digests verified via Cosign.")
+        # Gate 3: SBOM ledger and SHA-256 artifact compliance verification
+        sbom_allowed, sbom_reason = verify_sbom_compliance(image_str)
+        if not sbom_allowed:
+            logger.info(f"Admission DENIED for UID={uid}: {sbom_reason}")
+            return AdmissionReview(
+                apiVersion=admission_review.apiVersion,
+                kind=admission_review.kind,
+                response=AdmissionResponse(
+                    uid=uid,
+                    allowed=False,
+                    status={"code": 403, "message": sbom_reason}
+                )
+            )
+
+    logger.info(f"Admission ALLOWED for UID={uid}: All container digests verified via Cosign and SBOM ledger.")
     return AdmissionReview(
         apiVersion=admission_review.apiVersion,
         kind=admission_review.kind,
         response=AdmissionResponse(
             uid=uid,
             allowed=True,
-            status={"code": 200, "message": "All images cryptographically signed and verified."}
+            status={"code": 200, "message": "All images cryptographically signed and SBOM-verified."}
         )
     )

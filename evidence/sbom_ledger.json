@@ -1,21 +1,29 @@
-{
-  "registry.internal/verified-app:v1.0": {
-    "sbom_format": "CycloneDX-JSON",
-    "sbom_sha256": "4a5e1289b4f9810a7261d7a86f912e5c8e3e4a908123fa908123fa908123fa90",
-    "attestation_status": "VERIFIED",
-    "allowed": true
-  },
-  "nginx@sha256:4ff3c62589e60ffd597a82ec4704044a600375aa4b8400030f8b1a8c5eb38221": {
-    "image_name": "nginx:alpine",
-    "sbom_format": "CycloneDX-JSON",
-    "sbom_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "attestation_status": "VERIFIED",
-    "allowed": true
-  },
-  "python:3.11-slim": {
-    "sbom_format": "SPDX-JSON",
-    "sbom_sha256": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-    "attestation_status": "VERIFIED",
-    "allowed": true
-  }
+﻿{
+    "registry.internal/verified-app:v1.0":  {
+                                                "sbom_format":  "CycloneDX-JSON",
+                                                "sbom_sha256":  "4a5e1289b4f9810a7261d7a86f912e5c8e3e4a908123fa908123fa908123fa90",
+                                                "attestation_status":  "VERIFIED",
+                                                "allowed":  true
+                                            },
+    "nginx@sha256:4ff3c62589e60ffd597a82ec4704044a600375aa4b8400030f8b1a8c5eb38221":  {
+                                                                                          "image_name":  "nginx:alpine",
+                                                                                          "sbom_format":  "CycloneDX-JSON",
+                                                                                          "sbom_sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                                                                                          "attestation_status":  "VERIFIED",
+                                                                                          "allowed":  true
+                                                                                      },
+    "python:3.11-slim":  {
+                             "sbom_format":  "SPDX-JSON",
+                             "sbom_sha256":  "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+                             "attestation_status":  "VERIFIED",
+                             "allowed":  true
+                         },
+    "ghcr.io/leena890/kubevigil-test@sha256:c64c687cbea9300178b30c95835354e34c4e4febc4badfe27102879de0483b5e":  {
+                                                                                                                    "image_name":  "ghcr.io/leena890/kubevigil-test",
+                                                                                                                    "sbom_format":  "CycloneDX-JSON",
+                                                                                                                    "sbom_file":  "/evidence/kubevigil-test.sbom.json",
+                                                                                                                    "sbom_sha256":  "cbb11793559f96b1f52124fb13f60e0d38939773513748f9adbbadc051a5fc95",
+                                                                                                                    "attestation_status":  "VERIFIED",
+                                                                                                                    "allowed":  true
+                                                                                                                }
 }
