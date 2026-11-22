@@ -5,7 +5,8 @@
     "attestation_status": "VERIFIED",
     "allowed": true
   },
-  "nginx:alpine": {
+  "nginx@sha256:4ff3c62589e60ffd597a82ec4704044a600375aa4b8400030f8b1a8c5eb38221": {
+    "image_name": "nginx:alpine",
     "sbom_format": "CycloneDX-JSON",
     "sbom_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "attestation_status": "VERIFIED",

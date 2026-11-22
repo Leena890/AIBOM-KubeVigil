@@ -17,11 +17,18 @@ spec:
     spec:
       containers:
         - name: webhook
-          image: kubevigil:v2
+          image: kubevigil:v10
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8443
               name: https
+          volumeMounts:
+            - name: certs-volume
+              mountPath: /certs
+              readOnly: true
+            - name: ledger-volume
+              mountPath: /app/evidence
+              readOnly: true
           livenessProbe:
             httpGet:
               path: /healthz
@@ -36,6 +43,13 @@ spec:
               scheme: HTTPS
             initialDelaySeconds: 5
             periodSeconds: 10
+      volumes:
+        - name: certs-volume
+          secret:
+            secretName: kubevigil-tls
+        - name: ledger-volume
+          configMap:
+            name: kubevigil-ledger
 ---
 apiVersion: v1
 kind: Service

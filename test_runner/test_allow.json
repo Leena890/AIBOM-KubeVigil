@@ -11,7 +11,7 @@
         "containers": [
           {
             "name": "demo",
-            "image": "registry.internal/verified-app:v1.0"
+            "image": "nginx@sha256:4ff3c62589e60ffd597a82ec4704044a600375aa4b8400030f8b1a8c5eb38221"
           }
         ]
       }

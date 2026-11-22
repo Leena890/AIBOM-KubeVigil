@@ -1,92 +1,135 @@
 import json
 import logging
-from pathlib import Path
+import os
+import subprocess
+from typing import Tuple
+
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from webhook.schemas import AdmissionResponse, AdmissionRequest, AdmissionReview
 
-logging.basicConfig(level=logging.INFO)
+try:
+    from webhook.schemas import AdmissionResponse, AdmissionRequest, AdmissionReview
+except ModuleNotFoundError:
+    from schemas import AdmissionResponse, AdmissionRequest, AdmissionReview
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s"
+)
 logger = logging.getLogger("kube-vigil")
 
-app = FastAPI(title="KubeVigil Admission Controller")
+app = FastAPI(title="KubeVigil Admission Webhook", version="0.5.0")
+
+# Trusted Sigstore signer policy (configurable via environment variables)
+TRUSTED_IDENTITY = os.getenv("COSIGN_IDENTITY", "leenaks1998@gmail.com")
+TRUSTED_ISSUER = os.getenv("COSIGN_OIDC_ISSUER", "https://accounts.google.com")
+
+
+def verify_image_signature(image_str: str) -> Tuple[bool, str]:
+    """
+    Validate container image cryptographically via Sigstore Cosign.
+    Requires an immutable @sha256 digest and a valid signature from the trusted identity.
+    """
+    # 1. Enforce immutable @sha256 digest
+    if "@sha256:" not in image_str:
+        return (
+            False,
+            f"Image '{image_str}' rejected: Mutable tags disallowed. "
+            f"Image must be pinned to an immutable '@sha256:<digest>'."
+        )
+
+    # 2. Execute live Cosign verification against registry + Sigstore Rekor/Fulcio
+    cmd = [
+        "cosign",
+        "verify",
+        f"--certificate-identity={TRUSTED_IDENTITY}",
+        f"--certificate-oidc-issuer={TRUSTED_ISSUER}",
+        image_str,
+    ]
+
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=15
+        )
+    except subprocess.TimeoutExpired:
+        logger.error(f"Cosign verification timed out for {image_str}")
+        return (
+            False,
+            f"Digest identity '{image_str}' rejected: Cryptographic verification timed out."
+        )
+    except Exception as e:
+        logger.error(f"Cosign execution error for {image_str}: {e}")
+        return (
+            False,
+            f"Digest identity '{image_str}' rejected: Verification engine error."
+        )
+
+    if result.returncode != 0:
+        err_detail = (result.stderr or "").strip().splitlines()[-1] if result.stderr else "No valid signature found."
+        return (
+            False,
+            f"Digest identity '{image_str}' rejected: Cosign signature verification failed ({err_detail})."
+        )
+
+    return (
+        True,
+        f"Cryptographic signature verified via Sigstore for identity '{TRUSTED_IDENTITY}'."
+    )
+
+
 @app.get("/healthz")
 async def healthz():
     return {"status": "ok"}
 
-LEDGER_PATH = Path(__file__).resolve().parent.parent / "evidence" / "sbom_ledger.json"
-
-def load_sbom_ledger() -> dict:
-    if not LEDGER_PATH.exists():
-        logger.warning(f"Ledger file not found at {LEDGER_PATH}. Defaulting to empty ledger.")
-        return {}
-    try:
-        with open(LEDGER_PATH, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception as exc:
-        logger.error(f"Error reading SBOM ledger: {exc}")
-        return {}
-
-def verify_image_sbom(image_name: str, ledger: dict) -> tuple[bool, str]:
-    if image_name not in ledger:
-        return (
-            False,
-            f"Image '{image_name}' rejected: No verified SBOM or attestation found in ledger."
-        )
-
-    entry = ledger[image_name]
-    if not entry.get("allowed", False):
-        return (
-            False,
-            f"Image '{image_name}' rejected: Marked as disallowed by supply-chain policy."
-        )
-
-    if entry.get("attestation_status") != "VERIFIED":
-        return (
-            False,
-            f"Image '{image_name}' rejected: Attestation status is '{entry.get('attestation_status')}' (expected 'VERIFIED')."
-        )
-
-    sbom_format = entry.get("sbom_format", "Unknown")
-    return (
-        True,
-        f"Image '{image_name}' approved: Valid {sbom_format} SBOM recorded."
-    )
 
 @app.post("/validate")
-async def validate_pod(request: Request):
-    review = await request.json()
-    req_body = review.get("request", {})
-    uid = req_body.get("uid", "")
-    pod = req_body.get("object", {})
+async def validate_admission(request: Request):
+    raw_body = await request.body()
+    try:
+        data = json.loads(raw_body)
+        admission_review = AdmissionReview(**data)
+    except Exception as e:
+        logger.error(f"Failed to parse admission review request: {e}")
+        return JSONResponse(
+            status_code=400,
+            content={"error": "Invalid admission review request structure."}
+        )
 
-    containers = pod.get("spec", {}).get("containers", [])
-    ledger = load_sbom_ledger()
+    req = admission_review.request
+    uid = req.uid
+    logger.info(f"Evaluating AdmissionReview UID={uid} for Resource={req.resource}")
 
-    for container in containers:
-        image = container.get("image", "")
-        allowed, reason = verify_image_sbom(image, ledger)
+    pod_obj = req.object
+    containers = []
+    if pod_obj and pod_obj.spec:
+        containers = list(pod_obj.spec.containers or []) + list(pod_obj.spec.initContainers or [])
+
+    for c in containers:
+        image_str = c.image
+        allowed, reason = verify_image_signature(image_str)
         if not allowed:
             logger.info(f"Admission DENIED for UID={uid}: {reason}")
-            return JSONResponse(
-                content={
-                    "apiVersion": "admission.k8s.io/v1",
-                    "kind": "AdmissionReview",
-                    "response": {
-                        "uid": uid,
-                        "allowed": False,
-                        "status": {"code": 403, "message": reason},
-                    },
-                }
+            return AdmissionReview(
+                apiVersion=admission_review.apiVersion,
+                kind=admission_review.kind,
+                response=AdmissionResponse(
+                    uid=uid,
+                    allowed=False,
+                    status={"code": 403, "message": reason}
+                )
             )
 
-    logger.info(f"Admission ALLOWED for UID={uid}: All container images verified via SBOM ledger.")
-    return JSONResponse(
-        content={
-            "apiVersion": "admission.k8s.io/v1",
-            "kind": "AdmissionReview",
-            "response": {
-                "uid": uid,
-                "allowed": True,
-                "status": {"code": 200, "message": "All images verified against SBOM ledger."},
-            },
-        }
+    logger.info(f"Admission ALLOWED for UID={uid}: All container digests verified via Cosign.")
+    return AdmissionReview(
+        apiVersion=admission_review.apiVersion,
+        kind=admission_review.kind,
+        response=AdmissionResponse(
+            uid=uid,
+            allowed=True,
+            status={"code": 200, "message": "All images cryptographically signed and verified."}
+        )
     )
