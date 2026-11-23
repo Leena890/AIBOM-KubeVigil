@@ -1,0 +1,47 @@
+{
+  "recorded_utc": "2026-11-23T09:21:18.426817+00:00",
+  "total_cases": 4,
+  "passed_cases": 4,
+  "results": [
+    {
+      "test_case": "TC-01: Signed AI Workload + Valid SBOM/AIBOM",
+      "image": "ghcr.io/leena890/kubevigil-ai-app@sha256:0be7b7f8d430a21b807b590b7f81785b01421979001ef9be70449bc9326d1130",
+      "expected_allowed": true,
+      "actual_allowed": true,
+      "http_status": 200,
+      "latency_ms": 6367.93,
+      "assertion_passed": true,
+      "decision_message": "All images cryptographically signed and SBOM-verified."
+    },
+    {
+      "test_case": "TC-02: Mutable Tag Blocked",
+      "image": "ghcr.io/leena890/kubevigil-ai-app:v1.1.0",
+      "expected_allowed": false,
+      "actual_allowed": false,
+      "http_status": 403,
+      "latency_ms": 16.16,
+      "assertion_passed": true,
+      "decision_message": "Image 'ghcr.io/leena890/kubevigil-ai-app:v1.1.0' rejected: Mutable tags disallowed. Image must be pinned to an immutable '@sha256:<digest>'."
+    },
+    {
+      "test_case": "TC-03: Untrusted Registry Image (test_deny.json)",
+      "image": "untrusted-registry.io/app:latest",
+      "expected_allowed": false,
+      "actual_allowed": false,
+      "http_status": 403,
+      "latency_ms": 14.96,
+      "assertion_passed": true,
+      "decision_message": "Image 'untrusted-registry.io/app:latest' rejected: Mutable tags disallowed. Image must be pinned to an immutable '@sha256:<digest>'."
+    },
+    {
+      "test_case": "TC-04: Unsigned Digest-Pinned Image",
+      "image": "alpine@sha256:beefdbd8a1da6d2915566fde36db9db0b524eb737fc57cd1367effd16dc0d06d",
+      "expected_allowed": false,
+      "actual_allowed": false,
+      "http_status": 403,
+      "latency_ms": 2906.41,
+      "assertion_passed": true,
+      "decision_message": "Digest identity 'alpine@sha256:beefdbd8a1da6d2915566fde36db9db0b524eb737fc57cd1367effd16dc0d06d' rejected: Cosign signature verification failed (error during command execution: no signatures found)."
+    }
+  ]
+}

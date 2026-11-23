@@ -2,16 +2,24 @@
   "apiVersion": "admission.k8s.io/v1",
   "kind": "AdmissionReview",
   "request": {
-    "uid": "test-uid-02",
+    "uid": "test-uid-allow-ai-01",
     "operation": "CREATE",
-    "kind": { "group": "", "version": "v1", "kind": "Pod" },
-    "resource": { "group": "", "version": "v1", "resource": "pods" },
+    "kind": {
+      "group": "",
+      "version": "v1",
+      "kind": "Pod"
+    },
+    "resource": {
+      "group": "",
+      "version": "v1",
+      "resource": "pods"
+    },
     "object": {
       "spec": {
         "containers": [
           {
-            "name": "demo",
-            "image": "nginx@sha256:4ff3c62589e60ffd597a82ec4704044a600375aa4b8400030f8b1a8c5eb38221"
+            "name": "kubevigil-ai-app",
+            "image": "ghcr.io/leena890/kubevigil-ai-app@sha256:0be7b7f8d430a21b807b590b7f81785b01421979001ef9be70449bc9326d1130"
           }
         ]
       }

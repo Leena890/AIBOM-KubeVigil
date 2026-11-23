@@ -1,0 +1,22 @@
+{
+  "model_name": "kubevigil-container-anomaly-detector",
+  "model_version": "1.1.0",
+  "framework": "scikit-learn-onnx",
+  "algorithm": "RandomForestClassifier(n_estimators=100, max_depth=8)",
+  "license": "Apache-2.0",
+  "dataset_rows": 10000,
+  "features": [
+    "syscall_rate",
+    "outbound_conns",
+    "cpu_pct",
+    "is_root"
+  ],
+  "dataset_sha256": "438f7ce3550eeee7632060b7bc7654e7ac50136f7099c270622ddd79f3a2ff11",
+  "model_sha256": "c8d3571811fed7390a57130418bdb8c549d67c1b310a374055ded529de78c83e",
+  "cv5_f1_score": 0.9694,
+  "eval_accuracy": 0.963,
+  "eval_precision": 0.9696,
+  "eval_recall": 0.956,
+  "eval_f1": 0.9627,
+  "eval_roc_auc": 0.9951
+}

@@ -1,29 +1,75 @@
-﻿{
-    "registry.internal/verified-app:v1.0":  {
-                                                "sbom_format":  "CycloneDX-JSON",
-                                                "sbom_sha256":  "4a5e1289b4f9810a7261d7a86f912e5c8e3e4a908123fa908123fa908123fa90",
-                                                "attestation_status":  "VERIFIED",
-                                                "allowed":  true
-                                            },
-    "nginx@sha256:4ff3c62589e60ffd597a82ec4704044a600375aa4b8400030f8b1a8c5eb38221":  {
-                                                                                          "image_name":  "nginx:alpine",
-                                                                                          "sbom_format":  "CycloneDX-JSON",
-                                                                                          "sbom_sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-                                                                                          "attestation_status":  "VERIFIED",
-                                                                                          "allowed":  true
-                                                                                      },
-    "python:3.11-slim":  {
-                             "sbom_format":  "SPDX-JSON",
-                             "sbom_sha256":  "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-                             "attestation_status":  "VERIFIED",
-                             "allowed":  true
-                         },
-    "ghcr.io/leena890/kubevigil-test@sha256:c64c687cbea9300178b30c95835354e34c4e4febc4badfe27102879de0483b5e":  {
-                                                                                                                    "image_name":  "ghcr.io/leena890/kubevigil-test",
-                                                                                                                    "sbom_format":  "CycloneDX-JSON",
-                                                                                                                    "sbom_file":  "/evidence/kubevigil-test.sbom.json",
-                                                                                                                    "sbom_sha256":  "cbb11793559f96b1f52124fb13f60e0d38939773513748f9adbbadc051a5fc95",
-                                                                                                                    "attestation_status":  "VERIFIED",
-                                                                                                                    "allowed":  true
-                                                                                                                }
+{
+  "registry.internal/verified-app:v1.0": {
+    "sbom_format": "CycloneDX-JSON",
+    "sbom_sha256": "4a5e1289b4f9810a7261d7a86f912e5c8e3e4a908123fa908123fa908123fa90",
+    "attestation_status": "VERIFIED",
+    "allowed": true
+  },
+  "nginx@sha256:4ff3c62589e60ffd597a82ec4704044a600375aa4b8400030f8b1a8c5eb38221": {
+    "image_name": "nginx:alpine",
+    "sbom_format": "CycloneDX-JSON",
+    "sbom_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "attestation_status": "VERIFIED",
+    "allowed": true
+  },
+  "python:3.11-slim": {
+    "sbom_format": "SPDX-JSON",
+    "sbom_sha256": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+    "attestation_status": "VERIFIED",
+    "allowed": true
+  },
+  "ghcr.io/leena890/kubevigil-test@sha256:c64c687cbea9300178b30c95835354e34c4e4febc4badfe27102879de0483b5e": {
+    "image_name": "ghcr.io/leena890/kubevigil-test",
+    "sbom_format": "CycloneDX-JSON",
+    "sbom_file": "/evidence/kubevigil-test.sbom.json",
+    "sbom_sha256": "cbb11793559f96b1f52124fb13f60e0d38939773513748f9adbbadc051a5fc95",
+    "attestation_status": "VERIFIED",
+    "allowed": true
+  },
+  "ghcr.io/leena890/kubevigil-ai-app@sha256:b35cd4c99b7f9f93f062db784113968eb9672d169375812b97803a10ee5ad115": {
+    "image_name": "ghcr.io/leena890/kubevigil-ai-app",
+    "sbom_format": "CycloneDX-JSON",
+    "sbom_file": "/evidence/kubevigil-ai-app.sbom.json",
+    "sbom_sha256": "b63210aab7467dc4ccd50ade8bfd1c66b77e6509b91ee935a7c4ef3ae4e0e457",
+    "aibom": {
+      "model_name": "kubevigil-container-anomaly-detector",
+      "model_version": "1.0.0",
+      "framework": "scikit-learn-onnx",
+      "license": "Apache-2.0",
+      "dataset_sha256": "19470f8eb54b551864d7d7a7c3d9f0fa744b775be5249f584051562b7c174e46",
+      "model_sha256": "c02b5f9200fa0e423ad30789c7081bae0acc7df9ea28f5a410053de6270bf613",
+      "eval_accuracy": 1.0
+    },
+    "attestation_status": "VERIFIED",
+    "allowed": true
+  },
+  "ghcr.io/leena890/kubevigil-ai-app@sha256:0be7b7f8d430a21b807b590b7f81785b01421979001ef9be70449bc9326d1130": {
+    "sbom_format": "CycloneDX-1.6-JSON",
+    "sbom_path": "evidence/kubevigil-ai-app.sbom.json",
+    "sbom_sha256": "781ffa39b5bb9bf6d5b10292d110f9c9184cdf38da80141f36b41bf584ec233c",
+    "aibom": {
+      "model_name": "kubevigil-container-anomaly-detector",
+      "model_version": "1.1.0",
+      "framework": "scikit-learn-onnx",
+      "algorithm": "RandomForestClassifier(n_estimators=100, max_depth=8)",
+      "license": "Apache-2.0",
+      "dataset_rows": 10000,
+      "features": [
+        "syscall_rate",
+        "outbound_conns",
+        "cpu_pct",
+        "is_root"
+      ],
+      "dataset_sha256": "438f7ce3550eeee7632060b7bc7654e7ac50136f7099c270622ddd79f3a2ff11",
+      "model_sha256": "c8d3571811fed7390a57130418bdb8c549d67c1b310a374055ded529de78c83e",
+      "cv5_f1_score": 0.9694,
+      "eval_accuracy": 0.963,
+      "eval_precision": 0.9696,
+      "eval_recall": 0.956,
+      "eval_f1": 0.9627,
+      "eval_roc_auc": 0.9951
+    },
+    "attestation_status": "VERIFIED",
+    "allowed": true
+  }
 }

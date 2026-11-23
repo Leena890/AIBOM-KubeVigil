@@ -1,4 +1,4 @@
-apiVersion: apps/v1
+﻿apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kubevigil-webhook
@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: webhook
-          image: kubevigil:v10
+          image: kubevigil:v11
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8443
@@ -28,6 +28,9 @@ spec:
               readOnly: true
             - name: ledger-volume
               mountPath: /app/evidence
+              readOnly: true
+            - name: docker-config
+              mountPath: /root/.docker
               readOnly: true
           livenessProbe:
             httpGet:
@@ -50,6 +53,12 @@ spec:
         - name: ledger-volume
           configMap:
             name: kubevigil-ledger
+        - name: docker-config
+          secret:
+            secretName: ghcr-pull-secret
+            items:
+              - key: .dockerconfigjson
+                path: config.json
 ---
 apiVersion: v1
 kind: Service
@@ -66,3 +75,5 @@ spec:
       name: https
   selector:
     app: kubevigil-webhook
+
+

@@ -1,6 +1,7 @@
-import json
+﻿import json
 import logging
 import os
+import shutil
 import subprocess
 from typing import Tuple
 
@@ -27,7 +28,7 @@ app = FastAPI(title="KubeVigil Admission Webhook", version="0.6.0")
 
 # Trusted Sigstore signer policy (configurable via environment variables)
 TRUSTED_IDENTITY = os.getenv("COSIGN_IDENTITY", "leenaks1998@gmail.com")
-TRUSTED_ISSUER = os.getenv("COSIGN_OIDC_ISSUER", "https://accounts.google.com")
+TRUSTED_ISSUER = os.getenv("COSIGN_OIDC_ISSUER", "https://github.com/login/oauth")
 
 
 def verify_image_signature(image_str: str) -> Tuple[bool, str]:
@@ -45,7 +46,7 @@ def verify_image_signature(image_str: str) -> Tuple[bool, str]:
 
     # 2. Execute live Cosign verification against registry + Sigstore Rekor/Fulcio
     cmd = [
-        "cosign",
+        (shutil.which('cosign') or r'C:\Users\leena\AppData\Local\Microsoft\WinGet\Packages\Sigstore.Cosign_Microsoft.Winget.Source_8wekyb3d8bbwe\cosign-windows-amd64.exe'),
         "verify",
         f"--certificate-identity={TRUSTED_IDENTITY}",
         f"--certificate-oidc-issuer={TRUSTED_ISSUER}",
@@ -153,3 +154,6 @@ async def validate_admission(request: Request):
             status={"code": 200, "message": "All images cryptographically signed and SBOM-verified."}
         )
     )
+
+
+
